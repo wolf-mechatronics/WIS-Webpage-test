@@ -1,0 +1,7 @@
+node_modules/
+temporary screenshots/
+
+# Design references, not used by the site
+Webpage_screenshot.png
+Bolt1.webp
+Bolt2.webp

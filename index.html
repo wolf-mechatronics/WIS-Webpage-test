@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WIS Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* 1rem = 1 design px at 1920 wide — the whole page scales with the viewport, like the reference */
+  :root {
+    --bg-color: #c2cabb;
+    --text-color: #f5f5f5;
+    --text-color-black: #10120f;
+    --white: #fff;
+    --dark-color: #0b0c0a;
+    --about-color: #3b4039;
+    --grey-color: grey;
+    --gutter: 140rem;
+    --spring: cubic-bezier(.34, 1.56, .64, 1);
+    --ease-out: cubic-bezier(.16, 1, .3, 1);
+    --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: .0520834vw; scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    font-weight: 400;
+    font-size: 18rem;
+    line-height: 1.7;
+    color: var(--text-color-black);
+    background: var(--text-color-black);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+  ::selection { background: var(--text-color-black); color: var(--text-color); }
+  a { color: inherit; text-decoration: none; }
+  button, input, textarea { font: inherit; color: inherit; background: none; border: 0; outline: 0; }
+  img { display: block; max-width: 100%; }
+  :focus-visible { outline: 2rem solid currentColor; outline-offset: 6rem; border-radius: 4rem; }
+
+  .up { text-transform: uppercase; }
+  .tag { font-size: 15rem; font-weight: 300; letter-spacing: .01em; white-space: pre; }
+  .grain { position: relative; isolation: isolate; }
+  .grain::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background-image: var(--noise); opacity: .18; mix-blend-mode: overlay;
+  }
+
+  /* Links: hover lifts, active presses */
+  .lnk { display: inline-block; transition: transform .45s var(--spring), opacity .3s ease; }
+  .lnk:hover { transform: translateY(-2rem); opacity: .7; }
+  .lnk:active { transform: translateY(1rem) scale(.97); opacity: .55; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 30rem var(--gutter) 0 142rem; color: var(--text-color);
+  }
+  .logo { display: block; height: 28rem; transition: transform .45s var(--spring), opacity .3s ease; }
+  .logo img { height: 100%; width: auto; filter: invert(1); mix-blend-mode: screen; }
+  .logo:hover { transform: scale(1.04); opacity: .8; }
+  .logo:active { transform: scale(.96); }
+  .nav ul { display: flex; gap: 92rem; list-style: none; font-size: 15rem; font-weight: 300; }
+
+  /* ---------- Hero ---------- */
+  .hero { position: relative; height: 762rem; overflow: hidden; color: var(--text-color); }
+  /* Lit studio backdrop: wall, horizon at ~61%, light from the right */
+  .hero {
+    background:
+      radial-gradient(38% 75% at 100% 58%, rgba(200,218,192,.95), rgba(200,218,192,0) 72%),
+      linear-gradient(to bottom, rgba(0,0,0,0) 60.5%, rgba(255,255,255,.05) 61%, rgba(0,0,0,.04) 80%, rgba(0,0,0,.12) 100%),
+      linear-gradient(100deg, #4a5445 0%, #66745f 35%, #8d9d87 70%, #a6b7a0 100%);
+  }
+  /* Machined bolt lying diagonally on the floor, tip back-left, socket end toward the viewer */
+  .hero__bolt { position: absolute; left: 520rem; top: 70rem; width: 900rem; height: auto; overflow: visible; }
+  /* WebGL render of the bolt; the SVG above stays as the no-WebGL fallback */
+  .hero__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero.has-3d .hero__bolt { display: none; }
+  .hero__tagline {
+    position: absolute; top: 353rem; left: 830rem; z-index: 1; display: inline-block; white-space: nowrap;
+    text-shadow: 0 1rem 12rem rgba(20,24,19,.55);
+    font-size: 18rem; line-height: 20rem; font-weight: 300; text-transform: uppercase;
+  }
+  .hero__tagline span { display: block; }
+  .hero__tagline span:nth-child(2) { text-align: right; }
+  .hero__tagline span:nth-child(3) { padding-left: calc(100% - 30rem); }
+
+  /* ---------- Manifesto: pinned panel, letters flicker in on scroll ---------- */
+  .manifesto {
+    position: relative; height: 220vh; color: var(--text-color-black);
+    background:
+      radial-gradient(40% 6% at 30% 22%, rgba(255,255,255,.08), transparent 70%),
+      radial-gradient(35% 5% at 70% 48%, rgba(255,255,255,.07), transparent 70%),
+      radial-gradient(45% 6% at 40% 78%, rgba(255,255,255,.06), transparent 70%),
+      #b3bcad;
+  }
+  .manifesto__pin { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  .manifesto__corner { position: absolute; display: flex; align-items: center; font-size: 17rem; font-weight: 300; }
+  .manifesto__corner--tl { top: 94rem; left: var(--gutter); }
+  .manifesto__corner--tc { top: 94rem; left: 50%; transform: translateX(-50%); }
+  .manifesto__corner--tr { top: 94rem; right: var(--gutter); }
+  .manifesto__corner--bl { bottom: 80rem; left: var(--gutter); gap: 6rem; font-size: 13rem; }
+  .manifesto__corner--bc { bottom: 96rem; left: 50%; transform: translateX(-50%); }
+  .manifesto__corner--br { bottom: 96rem; right: var(--gutter); }
+  .status-pill { padding: 2rem 16rem; border: 1rem solid rgba(16,18,15,.7); border-radius: 999rem; }
+  .dial { width: 44rem; height: 64rem; }
+  .manifesto__text {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -60%);
+    font-size: 18rem; line-height: 20.5rem; text-transform: uppercase; white-space: nowrap;
+  }
+  .manifesto__text > span { display: block; }
+  .manifesto__text .r { text-align: right; }
+  .manifesto__text .gap { display: inline-block; width: 78rem; }
+  .manifesto__text .ch { position: relative; display: inline-block; opacity: var(--o, 0); }
+  /* white ghost copy that flashes before the dark letter settles */
+  .manifesto__text .ch::after {
+    content: attr(data-c); position: absolute; left: 0; top: 0; color: var(--text-color); opacity: var(--w, 0);
+  }
+  .signature {
+    position: absolute; top: calc(100% + 22rem); right: -60rem; width: 170rem; height: 110rem; overflow: visible;
+  }
+  .signature path { fill: none; stroke: var(--text-color-black); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: var(--draw, 1); }
+
+  /* ---------- About ---------- */
+  /* clip (not hidden) keeps the sticky pin working while containing the scattered letters */
+  .about { position: relative; height: 2290rem; background: var(--text-color-black); color: var(--text-color); overflow: clip; }
+  .about__pin { position: sticky; top: 0; height: 1100rem; }
+  .about__num { position: absolute; top: 172rem; right: var(--gutter); color: #4a4f48; font-size: 15rem; }
+  .about__label { position: absolute; top: 202rem; left: 142rem; font-size: 15rem; font-weight: 300; }
+  .about__label::before {
+    content: ""; position: absolute; top: -26rem; left: 160rem; width: 38rem; height: 1rem; background: #2b2f2a;
+  }
+  .about__bar { position: absolute; top: 217rem; right: var(--gutter); width: 3rem; height: 65rem; background: #3b4039; }
+  .about__field { position: absolute; top: 200rem; left: 50%; width: 840rem; transform: translateX(-50%); }
+  .about__portrait {
+    position: relative; width: 90rem; height: 124rem; margin: 0 auto 40rem; overflow: hidden;
+  }
+  .about__portrait img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); }
+  .about__portrait::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); z-index: 1; }
+  .about__portrait::before { opacity: .5; }
+  .about__portrait::after { content: ""; position: absolute; inset: 0; background: #9aa595; mix-blend-mode: multiply; opacity: .35; z-index: 2; }
+  .scatter {
+    font-size: 16rem; font-weight: 300; line-height: 34rem; letter-spacing: .14em; text-align: center; text-transform: uppercase;
+  }
+  .scatter .ch { display: inline-block; will-change: transform; }
+  .about__cta {
+    display: block; width: 169rem; height: 45rem; margin: 420rem auto 0; border: 1rem solid #2e322d; border-radius: 999rem;
+    color: #4d524b; font-size: 18rem; line-height: 43rem; text-align: center; text-transform: uppercase;
+    transition: transform .45s var(--spring), opacity .3s ease, background-color .3s ease, color .3s ease;
+  }
+  .about__cta:hover { transform: translateY(-3rem); background-color: var(--text-color); color: var(--text-color-black); }
+  .about__cta:active { transform: scale(.95); }
+  .about__foot { position: absolute; top: 1017rem; left: 142rem; right: var(--gutter); display: flex; justify-content: space-between; align-items: center; }
+  .about__foot i { display: block; width: 65rem; height: 3rem; background: #3b4039; }
+  .about__foot span { color: #4a4f48; font-size: 15rem; }
+
+  /* ---------- Awards ---------- */
+  .awards { position: relative; height: 1535rem; background: var(--bg-color); overflow: hidden; }
+  .awards__num { position: absolute; top: 90rem; right: var(--gutter); font-size: 15rem; font-weight: 300; }
+  .awards__label { position: absolute; top: 272rem; left: 137rem; font-size: 15rem; font-weight: 300; }
+  .awards__big {
+    position: absolute; top: 60rem; right: 125rem; z-index: 0;
+    font-size: 820rem; font-weight: 500; line-height: 1; letter-spacing: -.03em; color: rgba(255,255,255,.17);
+    user-select: none; pointer-events: none;
+  }
+  .awards__lead {
+    position: absolute; top: 314rem; right: var(--gutter); z-index: 1;
+    font-size: 20rem; line-height: 20rem; text-align: right; text-transform: uppercase;
+  }
+  .awards__table { position: absolute; top: 600rem; left: 504rem; width: 1278rem; z-index: 1; list-style: none; }
+  .awards__table li {
+    display: grid; grid-template-columns: 101rem 367rem 1fr; height: 49rem; align-items: end; padding: 0 4rem 7rem;
+    border-bottom: 1rem solid rgba(16,18,15,.55); font-size: 18rem; line-height: 1; text-transform: uppercase;
+    transition: transform .5s var(--spring);
+  }
+  .awards__table li:hover { transform: translateX(8rem); }
+  .awards__hills { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 330rem; }
+
+  /* ---------- Works ---------- */
+  .works {
+    position: relative; height: 2054rem; color: var(--text-color); overflow: hidden;
+    background:
+      radial-gradient(45% 30% at 50% 36%, rgba(60,62,58,.45), transparent 70%),
+      radial-gradient(60% 25% at 20% 72%, rgba(40,42,38,.6), transparent 70%),
+      radial-gradient(50% 35% at 85% 60%, rgba(46,48,44,.5), transparent 70%),
+      linear-gradient(to bottom, #0b0c0b 0%, #1a1b19 40%, #161715 70%, #121311 100%);
+  }
+  .works::after { opacity: .35; }
+  .works__ridge { position: absolute; left: 0; width: 100%; pointer-events: none; filter: blur(12rem); }
+  .works__label { position: absolute; top: 97rem; left: 50%; transform: translateX(-50%); font-size: 13rem; }
+  .works__num { position: absolute; top: 97rem; right: var(--gutter); font-size: 15rem; font-weight: 300; }
+  .work {
+    position: absolute; width: 362rem; padding-bottom: 6rem; border-bottom: 1rem solid rgba(245,245,245,.5);
+    font-size: 20rem; line-height: 1.2; font-weight: 300; text-transform: uppercase;
+    transition: transform .5s var(--spring), opacity .3s ease;
+  }
+  .work--r { text-align: right; }
+  .work:hover { transform: translateY(-4rem); opacity: .7; }
+  .work:active { transform: scale(.97); }
+  .work--1 { top: 181rem; left: 333rem; }
+  .work--2 { top: 241rem; left: 1226rem; }
+  .work--3 { top: 433rem; left: 333rem; }
+  .work--4 { top: 492rem; left: 1226rem; }
+  .work--5 { top: 684rem; left: 333rem; }
+  .work--6 { top: 681rem; left: 780rem; }
+  .work--7 { top: 744rem; left: 1226rem; }
+  .expertise__label { position: absolute; top: 1037rem; left: 137rem; font-size: 13rem; }
+  .expertise__num { position: absolute; top: 1037rem; right: var(--gutter); font-size: 15rem; font-weight: 300; }
+  .dot { position: absolute; top: 1231rem; width: 3rem; height: 3rem; border-radius: 50%; background: var(--text-color); }
+  .pills { position: absolute; top: 1386rem; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 18rem; }
+  .pills div { display: flex; gap: 20rem; }
+  .pill {
+    display: inline-block; padding: 4rem 20rem; border: 1rem solid rgba(245,245,245,.22); border-radius: 999rem;
+    font-size: 17rem; font-weight: 300; line-height: 1.4; text-transform: uppercase; color: rgba(245,245,245,.8);
+    transition: transform .45s var(--spring), background-color .3s ease, color .3s ease;
+  }
+  .pill:hover { background-color: rgba(245,245,245,.92); color: var(--text-color-black); transform: translateY(-2rem); }
+  .pill:active { transform: scale(.95); }
+  .plus { position: absolute; top: 1912rem; font-size: 16rem; font-weight: 300; line-height: 1; }
+
+  /* ---------- Contact ---------- */
+  .contact { position: relative; height: 2021rem; background: var(--bg-color); text-align: center; }
+  .contact__num { position: absolute; top: 198rem; left: 0; right: 0; color: var(--text-color); font-size: 15rem; font-weight: 300; }
+  .contact__label { position: absolute; top: 237rem; left: 0; right: 0; font-size: 16rem; font-weight: 300; }
+  .contact__rule { position: absolute; top: 346rem; left: 50%; width: 116rem; height: 3rem; margin-left: -58rem; background: var(--text-color-black); }
+  .form { position: absolute; top: 548rem; left: 50%; width: 453rem; margin-left: -226rem; text-align: left; }
+  .field { display: block; margin-bottom: 52rem; border-bottom: 1rem solid rgba(16,18,15,.6); transition: border-color .3s ease; }
+  .field:focus-within { border-bottom-color: var(--text-color-black); }
+  .field input, .field textarea {
+    display: block; width: 100%; padding: 4rem 0 6rem; font-size: 16rem; line-height: 1.3; text-transform: uppercase;
+  }
+  .field textarea { height: 112rem; resize: none; }
+  .field ::placeholder { color: var(--text-color-black); opacity: 1; }
+  .budget { margin-top: 18rem; font-size: 13rem; font-weight: 500; text-transform: uppercase; }
+  .budget__opts { display: flex; justify-content: space-between; margin-top: 18rem; }
+  .budget__opts label { position: relative; cursor: pointer; }
+  .budget__opts input { position: absolute; opacity: 0; pointer-events: none; }
+  .budget__opts span {
+    display: inline-block; padding: 3rem 20rem; border-radius: 999rem; font-size: 19rem; font-weight: 400;
+    transition: transform .45s var(--spring), background-color .3s ease;
+  }
+  .budget__opts label:hover span { background-color: rgba(255,255,255,.2); }
+  .budget__opts label:active span { transform: scale(.94); }
+  .budget__opts input:checked + span { background-color: rgba(255,255,255,.4); }
+  .budget__opts input:focus-visible + span { outline: 2rem solid var(--text-color-black); outline-offset: 3rem; }
+  .confirm {
+    display: block; width: 211rem; height: 47rem; margin: 70rem auto 0; border: 1rem solid rgba(16,18,15,.65); border-radius: 999rem;
+    font-size: 19rem; text-transform: uppercase; cursor: pointer;
+    transition: transform .45s var(--spring), background-color .3s ease, color .3s ease;
+  }
+  .confirm:hover { background-color: var(--text-color-black); color: var(--bg-color); transform: translateY(-3rem); }
+  .confirm:active { transform: scale(.95); }
+  .form__status { margin-top: 20rem; min-height: 24rem; font-size: 15rem; text-align: center; }
+
+  .foot-nav { position: absolute; top: 1444rem; left: 0; right: 0; display: flex; justify-content: center; gap: 66rem; list-style: none; color: var(--text-color); font-size: 19rem; font-weight: 300; text-transform: uppercase; }
+  .socials { position: absolute; top: 1673rem; left: 0; right: 0; display: flex; justify-content: center; gap: 75rem; font-size: 16rem; }
+  .socials a { text-decoration: underline; text-underline-offset: 3rem; }
+  .email { position: absolute; top: 1720rem; left: 0; right: 0; font-family: 'Bebas Neue', sans-serif; font-size: 36rem; line-height: 1.2; letter-spacing: .01em; }
+  .email a { display: inline-block; transition: transform .45s var(--spring), opacity .3s ease; }
+  .email a:hover { transform: scale(1.03); opacity: .75; }
+  .email a:active { transform: scale(.97); }
+  .bottom { position: absolute; top: 1958rem; left: 137rem; right: var(--gutter); display: flex; justify-content: space-between; align-items: center; }
+  .legal { font-size: 9rem; line-height: 1.1; text-align: left; }
+  .credit { font-size: 14rem; text-transform: uppercase; }
+  .credit a { text-decoration: underline; text-underline-offset: 2rem; }
+  .totop {
+    display: inline-block; padding: 2rem 16rem; border: 1rem solid rgba(16,18,15,.6); border-radius: 999rem; font-size: 16rem;
+    transition: transform .45s var(--spring), background-color .3s ease, color .3s ease;
+  }
+  .totop:hover { background-color: var(--text-color-black); color: var(--bg-color); }
+  .totop:active { transform: scale(.94); }
+
+  /* ---------- Phone ---------- */
+  @media (max-width: 767px) {
+    html { font-size: .24vw; }
+    :root { --gutter: 70rem; }
+    .nav { padding: 40rem var(--gutter) 0; }
+    .nav ul { display: none; }
+    .logo { height: 40rem; }
+    .hero { height: 1500rem; }
+    .hero__tagline { top: 620rem; left: var(--gutter); font-size: 26rem; line-height: 30rem; }
+    .hero__tagline span:nth-child(3) { padding-left: 0; text-align: right; }
+    .hero__bolt { left: -10rem; top: 230rem; width: 440rem; }
+    .manifesto__corner--tl, .manifesto__corner--tc, .manifesto__corner--tr { top: 70rem; }
+    .manifesto__text { font-size: 16rem; line-height: 19rem; }
+    .manifesto__text .gap { width: 40rem; }
+    .signature { right: 0; }
+    .about { height: auto; }
+    .about__pin { position: relative; height: auto; padding: 200rem var(--gutter) 260rem; }
+    .about__num, .about__bar { top: 120rem; right: var(--gutter); }
+    .about__bar { display: none; }
+    .about__label { top: 120rem; left: var(--gutter); }
+    .about__label::before { display: none; }
+    .about__field { position: relative; top: 0; left: 0; width: 100%; transform: none; }
+    .about__cta { margin-top: 120rem; width: 240rem; height: 60rem; line-height: 58rem; }
+    .about__foot { top: auto; bottom: 120rem; left: var(--gutter); }
+    .awards { height: auto; padding: 120rem var(--gutter) 420rem; }
+    .awards__num, .awards__label, .awards__lead, .awards__table { position: relative; top: auto; left: auto; right: auto; }
+    .awards__num, .awards__label { display: block; }
+    .awards__num { text-align: right; }
+    .awards__label { margin-top: 60rem; }
+    .awards__big { font-size: 520rem; top: 280rem; right: -20rem; }
+    .awards__lead { margin-top: 60rem; font-size: 22rem; line-height: 26rem; }
+    .awards__table { width: 100%; margin-top: 140rem; }
+    .awards__table li { grid-template-columns: 50rem 1fr 1.3fr; gap: 12rem; align-items: start; height: auto; min-height: 60rem; padding-top: 18rem; padding-bottom: 12rem; font-size: 15rem; line-height: 1.3; }
+    .awards__hills { height: 300rem; }
+    .works { height: auto; padding: 120rem var(--gutter) 200rem; }
+    .works__label, .works__num, .expertise__label, .expertise__num { top: 120rem; }
+    .works__label { left: var(--gutter); transform: none; }
+    .works__list { display: flex; flex-direction: column; gap: 60rem; padding-top: 160rem; }
+    .work { position: relative; top: auto !important; left: auto !important; width: 100%; font-size: 24rem; }
+    .work--r { text-align: left; }
+    .expertise { position: relative; margin-top: 260rem; padding-top: 140rem; }
+    .expertise__label, .expertise__num { top: 0; }
+    .expertise__label { left: 0; }
+    .expertise__num { right: 0; }
+    .dot { display: none; }
+    .pills { position: relative; top: auto; }
+    .pills div { flex-wrap: wrap; justify-content: center; }
+    .pill { font-size: 18rem; }
+    .plus { display: none; }
+    .contact { height: auto; padding: 160rem var(--gutter) 120rem; }
+    .contact__num, .contact__label, .contact__rule, .form, .foot-nav, .socials, .email, .bottom { position: relative; top: auto; left: auto; right: auto; margin-left: 0; }
+    .contact__label { margin-top: 20rem; }
+    .contact__rule { margin: 80rem auto 0; }
+    .form { width: 100%; margin-top: 160rem; }
+    .field input, .field textarea { font-size: 20rem; }
+    .budget__opts span { font-size: 20rem; }
+    .confirm { width: 280rem; height: 60rem; font-size: 20rem; }
+    .foot-nav { margin-top: 200rem; flex-wrap: wrap; gap: 30rem 50rem; font-size: 20rem; }
+    .socials { margin-top: 100rem; font-size: 18rem; }
+    .email { margin-top: 40rem; font-size: 40rem; }
+    .bottom { margin-top: 160rem; flex-direction: column; gap: 30rem; }
+    .legal { text-align: center; font-size: 12rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a class="logo" href="#top" aria-label="WIS home"><img src="brand_assets/WIS_logo_small.png" alt="WIS"></a>
+  <nav aria-label="Primary">
+    <ul class="up">
+      <li><a class="lnk" href="#about">About</a></li>
+      <li><a class="lnk" href="#awards">Awards</a></li>
+      <li><a class="lnk" href="#works">Works</a></li>
+      <li><a class="lnk" href="#expertise">Expertise</a></li>
+      <li><a class="lnk" href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero grain" aria-label="Intro">
+    <svg class="hero__bolt" viewBox="0 0 960 760" aria-hidden="true">
+      <defs>
+        <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#262a24"/><stop offset=".14" stop-color="#7f887a"/><stop offset=".27" stop-color="#d3dacd"/>
+          <stop offset=".38" stop-color="#7b8476"/><stop offset=".66" stop-color="#363b33"/><stop offset=".86" stop-color="#5d6659"/><stop offset="1" stop-color="#1d201b"/>
+        </linearGradient>
+        <linearGradient id="hexTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#596153"/><stop offset="1" stop-color="#a9b2a3"/></linearGradient>
+        <linearGradient id="hexMid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b7466"/><stop offset="1" stop-color="#3a4037"/></linearGradient>
+        <linearGradient id="hexBot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#30352d"/><stop offset="1" stop-color="#1a1d18"/></linearGradient>
+        <linearGradient id="endFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a3ac9c"/><stop offset="1" stop-color="#596153"/></linearGradient>
+        <clipPath id="threadClip"><path d="M710 -81 L718.2 -90 L726.4 -81 L734.5 -90 L742.7 -81 L750.9 -90 L759.1 -81 L767.3 -90 L775.5 -81 L783.6 -90 L791.8 -81 L800 -90 L808.2 -81 L816.4 -90 L824.5 -81 L832.7 -90 L840.9 -81 L849.1 -90 L857.3 -81 L865.5 -90 L873.6 -81 L881.8 -90 L890 -81 L890 90 L881.8 81 L873.6 90 L865.5 81 L857.3 90 L849.1 81 L840.9 90 L832.7 81 L824.5 90 L816.4 81 L808.2 90 L800 81 L791.8 90 L783.6 81 L775.5 90 L767.3 81 L759.1 90 L750.9 81 L742.7 90 L734.5 81 L726.4 90 L718.2 81 L710 90 Z"/></clipPath>
+        <filter id="boltShadow" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="16"/></filter>
+      </defs>
+      <!-- cast shadow on the floor, light from the right -->
+      <g transform="translate(22 92) rotate(35)" filter="url(#boltShadow)" fill="#141812" opacity=".55">
+        <rect x="0" y="-26" width="660" height="52" rx="26"/><rect x="650" y="-80" width="350" height="160" rx="20"/>
+      </g>
+      <g transform="translate(60 40) rotate(35)">
+        <path d="M0 -12 Q0 -25 22 -25 L240 -25 L240 -27 L360 -27 L360 -30 L620 -30 Q650 -30 652 -70 L652 70 Q650 30 620 30 L360 30 L360 27 L240 27 L240 25 L22 25 Q0 25 0 12 Z" fill="url(#steel)"/>
+        <path d="M30 -14 L610 -17" stroke="rgba(240,246,236,.35)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M240 -27 Q244 0 240 27" stroke="rgba(225,232,220,.55)" stroke-width="2"/><path d="M243 -27 Q247 0 243 27" stroke="rgba(8,10,7,.5)" stroke-width="2.5"/><path d="M360 -30 Q364 0 360 30" stroke="rgba(225,232,220,.55)" stroke-width="2"/><path d="M363 -30 Q367 0 363 30" stroke="rgba(8,10,7,.5)" stroke-width="2.5"/>
+        <rect x="652" y="-70" width="58" height="140" fill="url(#steel)"/>
+        <path d="M704 -70 L710 -64 L710 64 L704 70" fill="#2b3029"/>
+        <path d="M710 -81 L718.2 -90 L726.4 -81 L734.5 -90 L742.7 -81 L750.9 -90 L759.1 -81 L767.3 -90 L775.5 -81 L783.6 -90 L791.8 -81 L800 -90 L808.2 -81 L816.4 -90 L824.5 -81 L832.7 -90 L840.9 -81 L849.1 -90 L857.3 -81 L865.5 -90 L873.6 -81 L881.8 -90 L890 -81 L890 90 L881.8 81 L873.6 90 L865.5 81 L857.3 90 L849.1 81 L840.9 90 L832.7 81 L824.5 90 L816.4 81 L808.2 90 L800 81 L791.8 90 L783.6 81 L775.5 90 L767.3 81 L759.1 90 L750.9 81 L742.7 90 L734.5 81 L726.4 90 L718.2 81 L710 90 Z" fill="url(#steel)"/>
+        <g clip-path="url(#threadClip)" fill="none">
+          <g stroke="rgba(8,10,7,.6)" stroke-width="5"><path d="M710 -81 Q711.6 0 718.2 81"/><path d="M726.4 -81 Q728 0 734.5 81"/><path d="M742.7 -81 Q744.4 0 750.9 81"/><path d="M759.1 -81 Q760.7 0 767.3 81"/><path d="M775.5 -81 Q777.1 0 783.6 81"/><path d="M791.8 -81 Q793.5 0 800 81"/><path d="M808.2 -81 Q809.8 0 816.4 81"/><path d="M824.5 -81 Q826.2 0 832.7 81"/><path d="M840.9 -81 Q842.5 0 849.1 81"/><path d="M857.3 -81 Q858.9 0 865.5 81"/><path d="M873.6 -81 Q875.3 0 881.8 81"/></g>
+          <g stroke="rgba(228,236,222,.45)" stroke-width="2.2"><path d="M718.2 -90 Q719.8 0 726.4 90"/><path d="M734.5 -90 Q736.2 0 742.7 90"/><path d="M750.9 -90 Q752.5 0 759.1 90"/><path d="M767.3 -90 Q768.9 0 775.5 90"/><path d="M783.6 -90 Q785.3 0 791.8 90"/><path d="M800 -90 Q801.6 0 808.2 90"/><path d="M816.4 -90 Q818 0 824.5 90"/><path d="M832.7 -90 Q834.4 0 840.9 90"/><path d="M849.1 -90 Q850.7 0 857.3 90"/><path d="M865.5 -90 Q867.1 0 873.6 90"/><path d="M881.8 -90 Q883.5 0 890 90"/></g>
+        </g>
+        <rect x="890" y="-74" width="110" height="34" fill="url(#hexTop)"/>
+        <rect x="890" y="-40" width="110" height="80" fill="url(#hexMid)"/>
+        <rect x="890" y="40" width="110" height="34" fill="url(#hexBot)"/>
+        <path d="M890 -40 H1000 M890 40 H1000" stroke="rgba(220,228,214,.35)" stroke-width="1.5"/>
+        <ellipse cx="943" cy="0" rx="11" ry="12" fill="#0e100d"/><ellipse cx="941" cy="-2" rx="11" ry="12" fill="none" stroke="rgba(220,228,214,.3)" stroke-width="1.5"/>
+        <ellipse cx="943" cy="-57" rx="9" ry="6" fill="#0e100d"/>
+        <polygon points="1022.5,38 1000,76 977.5,38 977.5,-38 1000,-76 1022.5,-38" fill="url(#endFace)" stroke="rgba(20,23,19,.6)" stroke-width="1.5"/>
+        <polygon points="1010.7,15 1002,30 993.3,15 993.3,-15 1002,-30 1010.7,-15" fill="#121410"/>
+        <polygon points="1009.2,9 1004,18 998.8,9 998.8,-9 1004,-18 1009.2,-9" fill="#2a2e27"/>
+      </g>
+    </svg>
+    <canvas class="hero__canvas" data-bolt aria-hidden="true"></canvas>
+    <h1 class="hero__tagline"><span>Less, but every detail</span><span>chosen</span><span>on purpose.</span></h1>
+  </section>
+
+  <section class="manifesto grain" aria-label="Manifesto">
+    <div class="manifesto__pin">
+      <span class="manifesto__corner manifesto__corner--tl tag">[ N.001 ]</span>
+      <span class="manifesto__corner manifesto__corner--tc" aria-hidden="true">+</span>
+      <span class="manifesto__corner manifesto__corner--tr"><span class="status-pill">dev •</span></span>
+      <span class="manifesto__corner manifesto__corner--bl">
+        <svg class="dial" viewBox="0 0 44 64" aria-hidden="true" data-dial></svg>
+        <time data-clock>00:00</time>
+      </span>
+      <span class="manifesto__corner manifesto__corner--bc" aria-hidden="true">+</span>
+      <span class="manifesto__corner manifesto__corner--br">EDITION_1.0</span>
+
+      <p class="manifesto__text" data-unfold aria-label="In innovating and in life, I strive to keep only what matters and remove the rest. What stays is more advanced, clear, and powerful.">
+        <span>In innovating and in life,</span>
+        <span>I strive<i class="gap"></i>to keep only</span>
+        <span>what matters and remove the rest.</span>
+        <span>What stays is more advanced,</span>
+        <span class="r">clear,</span>
+        <span class="r">and powerful.</span>
+        <!-- Placeholder signature: swap these paths for a trace of your own -->
+        <svg class="signature" viewBox="0 0 170 110" aria-hidden="true">
+          <path pathLength="1" d="M10 92 C24 70 34 40 40 22 C44 40 46 62 52 70 C60 52 66 36 72 26 C76 44 80 62 86 68 C96 50 110 30 122 18"/>
+          <path pathLength="1" d="M122 18 C126 30 120 48 112 60 C108 66 118 62 126 54"/>
+          <path pathLength="1" d="M18 100 C60 92 110 88 164 76"/>
+        </svg>
+      </p>
+    </div>
+  </section>
+
+  <section class="about" id="about" aria-labelledby="about-label">
+    <div class="about__pin">
+      <span class="about__label" id="about-label">(About.)</span>
+      <span class="about__num tag">[ N.002 ]</span>
+      <i class="about__bar" aria-hidden="true"></i>
+      <div class="about__field">
+        <div class="about__portrait"><img src="https://placehold.co/180x248/6e736b/c4c9c0?text=Portrait" alt="Portrait placeholder"></div>
+        <p class="scatter" data-scatter>I craft solutions for problems that are perceived to be part of the product. Every project starts with one clear contradiction and ends when nothing else can be taken away.</p>
+        <a class="about__cta" href="#contact">About me</a>
+      </div>
+      <div class="about__foot" aria-hidden="true"><i></i><span class="tag">[ N.002 ]</span></div>
+    </div>
+  </section>
+
+  <section class="awards" id="awards" aria-labelledby="awards-label">
+    <span class="awards__num tag">[ N.003 ]</span>
+    <span class="awards__label tag" id="awards-label">( AWARDS. )</span>
+    <div class="awards__big" aria-hidden="true">00</div>
+    <p class="awards__lead">Recognition we share with our clients —<br>for websites built<br>to do their job well</p>
+    <!-- Placeholder rows: replace with real awards -->
+    <ul class="awards__table">
+      <li><span>2X</span><span>Award name</span><span>Site of the day</span></li>
+      <li><span>1X</span><span>Award name</span><span>Developer award</span></li>
+      <li><span>1X</span><span>Award name</span><span>Portfolio honors</span></li>
+      <li><span>2X</span><span>Award name</span><span>Honorable mention</span></li>
+      <li><span>2X</span><span>Award name</span><span>Site of the day</span></li>
+      <li><span>4X</span><span>Award name</span><span>Site of the day</span></li>
+      <li><span>1X</span><span>Award name</span><span>Site of the day</span></li>
+      <li><span>1X</span><span>Publication</span><span>Case study article</span></li>
+      <li><span>2X</span><span>Publication</span><span>Top 100 portfolios</span></li>
+      <li><span>1X</span><span>Publication</span><span>Web design trends</span></li>
+      <li><span>1X</span><span>Award name</span><span>Site of the day</span></li>
+    </ul>
+    <svg class="awards__hills" viewBox="0 0 1920 330" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <filter id="haze"><feGaussianBlur stdDeviation="3"/></filter>
+        <linearGradient id="fadeA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9b2a3" stop-opacity=".55"/><stop offset="1" stop-color="#b9c1b3" stop-opacity=".9"/></linearGradient>
+        <linearGradient id="fadeB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b1b9ab" stop-opacity=".8"/><stop offset="1" stop-color="#bcc4b6"/></linearGradient>
+      </defs>
+      <path filter="url(#haze)" fill="url(#fadeA)" d="M0 120 C80 95 160 70 240 30 C300 15 340 40 400 60 C520 95 640 110 760 120 C860 125 920 135 980 120 C1100 95 1250 70 1400 55 C1520 45 1640 30 1760 30 C1840 30 1890 25 1920 20 L1920 330 L0 330 Z"/>
+      <path filter="url(#haze)" fill="url(#fadeB)" d="M0 210 C180 190 360 175 540 185 C700 195 820 205 960 190 C1120 172 1300 160 1480 170 C1640 178 1800 190 1920 180 L1920 330 L0 330 Z"/>
+    </svg>
+  </section>
+
+  <section class="works grain" id="works" aria-labelledby="works-label">
+    <svg class="works__ridge" style="top:0;height:2054rem" viewBox="0 0 1920 2054" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="ridgeFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f100e" stop-opacity=".6"/><stop offset="1" stop-color="#0f100e" stop-opacity="0"/></linearGradient>
+      </defs>
+      <path fill="#0d0e0c" opacity=".7" d="M0 0 H1920 V260 C1700 240 1500 300 1300 330 C1150 350 1050 520 960 600 C880 520 780 380 640 330 C450 270 220 300 0 260 Z"/>
+      <path fill="url(#ridgeFade)" d="M0 900 C200 860 400 980 600 1000 C760 1015 860 900 960 850 C1080 900 1200 1000 1400 990 C1600 980 1760 900 1920 880 V2054 H0 Z"/>
+    </svg>
+    <span class="works__label tag" id="works-label">( WORKS. )</span>
+    <span class="works__num tag">[ N.004 ]</span>
+    <!-- Placeholder project names -->
+    <div class="works__list">
+      <a class="work work--1" href="#">Aurel Studio</a>
+      <a class="work work--2 work--r" href="#">Kessler</a>
+      <a class="work work--3" href="#">Field Notes</a>
+      <a class="work work--4 work--r" href="#">Linden Lane</a>
+      <a class="work work--5" href="#">Two Rivers Studio</a>
+      <a class="work work--6" href="#">Halden Architects</a>
+      <a class="work work--7 work--r" href="#">Common Ground</a>
+    </div>
+
+    <div class="expertise" id="expertise">
+      <span class="expertise__label tag">( EXPERTISE. )</span>
+      <span class="expertise__num tag">[ N.005 ]</span>
+      <i class="dot" style="left:718rem" aria-hidden="true"></i>
+      <i class="dot" style="left:949rem" aria-hidden="true"></i>
+      <i class="dot" style="left:1200rem" aria-hidden="true"></i>
+      <div class="pills">
+        <div><a class="pill" href="#contact">/ Landing pages</a><a class="pill" href="#contact">/ Corporate websites</a></div>
+        <div><a class="pill" href="#contact">/ Personal brand sites</a><a class="pill" href="#contact">/ E-commerce / Online stores</a></div>
+        <div><a class="pill" href="#contact">/ Showcase / Award websites</a><a class="pill" href="#contact">/ News &amp; communities</a></div>
+      </div>
+      <span class="plus" style="left:146rem" aria-hidden="true">+</span>
+      <span class="plus" style="left:1775rem" aria-hidden="true">+</span>
+    </div>
+  </section>
+
+  <section class="contact" id="contact" aria-labelledby="contact-label">
+    <span class="contact__num tag">[ N.006 ]</span>
+    <span class="contact__label" id="contact-label">( CONTACT FORM. )</span>
+    <i class="contact__rule" aria-hidden="true"></i>
+
+    <form class="form" id="form" novalidate>
+      <label class="field"><input name="name" placeholder="Your name*" required aria-label="Your name"></label>
+      <label class="field"><input name="email" type="email" placeholder="Your email*" required aria-label="Your email"></label>
+      <label class="field"><textarea name="message" placeholder="Your message*" required aria-label="Your message"></textarea></label>
+      <fieldset style="border:0">
+        <legend class="budget">Your budget (USD)</legend>
+        <div class="budget__opts">
+          <label><input type="radio" name="budget" value="5-10" checked><span>5K - 10K</span></label>
+          <label><input type="radio" name="budget" value="10-20"><span>10K - 20K</span></label>
+          <label><input type="radio" name="budget" value="more"><span>more</span></label>
+        </div>
+      </fieldset>
+      <button class="confirm" type="submit">Confirm</button>
+      <p class="form__status" id="status" role="status"></p>
+    </form>
+
+    <ul class="foot-nav">
+      <li><a class="lnk" href="#about">About</a></li>
+      <li><a class="lnk" href="#awards">Awards</a></li>
+      <li><a class="lnk" href="#works">Works</a></li>
+      <li><a class="lnk" href="#expertise">Expertise</a></li>
+    </ul>
+    <div class="socials">
+      <a class="lnk" href="#">Linkedin</a>
+      <a class="lnk" href="#">Telegram</a>
+      <a class="lnk" href="#">WhatsApp</a>
+    </div>
+    <p class="email up"><a href="mailto:hello@example.com">Email: hello@example.com</a></p>
+    <div class="bottom">
+      <p class="legal">2026 All rights reserved. WIS<br>Any reproduction, distribution, or use of the materials without permission is prohibited.</p>
+      <p class="credit">Website design - <a class="lnk" href="#">www.example.com</a></p>
+      <a class="totop" href="#top">top ↑</a>
+    </div>
+  </section>
+</main>
+
+<script>
+  // About text: letters start scattered and assemble as the section scrolls into place
+  (() => {
+    const el = document.querySelector('[data-scatter]');
+    const text = el.textContent;
+    el.setAttribute('aria-label', text);
+    el.textContent = '';
+    let seed = 7;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const chars = [];
+    text.split(' ').forEach((word, wi, words) => {
+      const w = document.createElement('span');
+      w.style.whiteSpace = 'nowrap';
+      w.setAttribute('aria-hidden', 'true');
+      for (const c of word) {
+        const s = document.createElement('span');
+        s.className = 'ch';
+        s.textContent = c;
+        // Pull letters toward two vertical columns and a loose middle cloud, like the reference
+        const r = rand();
+        const col = r < .38 ? -1 : r < .76 ? 1 : 0;
+        // Scattered target, in rem from the paragraph's centre
+        s._tx = col ? col * (300 + rand() * 70) : (rand() - .5) * 520;
+        s._dy = (rand() - .3) * 520;
+        chars.push(s);
+        w.appendChild(s);
+      }
+      el.appendChild(w);
+      if (wi < words.length - 1) el.appendChild(document.createTextNode(' '));
+    });
+
+    const section = document.querySelector('.about');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize);
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const rect = section.getBoundingClientRect();
+      const total = section.offsetHeight - innerHeight;
+      let p = reduce ? 1 : Math.min(1, Math.max(0, -rect.top / (total * .7)));
+      p = 1 - Math.pow(1 - p, 3);
+      // Scatter targets are authored for the 840rem desktop column; scale them to the actual column width
+      const rem = remPx(), k = 1 - p, scale = el.offsetWidth / (840 * rem);
+      for (const s of chars) {
+        // Measure the letter's resting x once (relative to the paragraph's centre)
+        if (s._x0 === undefined) s._x0 = s.offsetLeft + s.offsetWidth / 2 - el.offsetWidth / 2;
+        s.style.transform = `translate(${(s._tx * rem * scale - s._x0) * k}px, ${s._dy * rem * k}px)`;
+      }
+    };
+    const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('resize', () => { chars.forEach(s => delete s._x0); onScroll(); });
+    document.fonts.ready.then(update);
+  })();
+
+  // Manifesto: letters flash white and settle dark as the pinned panel scrolls; signature draws last
+  (() => {
+    const text = document.querySelector('[data-unfold]');
+    const section = text.closest('.manifesto');
+    const sig = text.querySelectorAll('.signature path');
+    const chars = [];
+    let seed = 11;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    text.querySelectorAll(':scope > span').forEach(line => {
+      line.setAttribute('aria-hidden', 'true');
+      [...line.childNodes].forEach(node => {
+        if (node.nodeType !== 3) return;
+        const frag = document.createDocumentFragment();
+        for (const c of node.textContent) {
+          if (c === ' ') { frag.appendChild(document.createTextNode(' ')); continue; }
+          const s = document.createElement('span');
+          s.className = 'ch';
+          s.textContent = s.dataset.c = c.toUpperCase();
+          chars.push(s);
+          frag.appendChild(s);
+        }
+        node.replaceWith(frag);
+      });
+    });
+    // Mostly reading order, with a little jitter so the reveal flickers rather than types
+    chars.forEach((s, i) => { s._start = (i / chars.length) * .62 + rand() * .08; });
+
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      const total = section.offsetHeight - innerHeight;
+      const p = reduce ? 1 : Math.min(1, Math.max(0, (-section.getBoundingClientRect().top + innerHeight * .35) / total));
+      for (const s of chars) {
+        const t = Math.min(1, Math.max(0, (p - s._start) / .14));
+        s.style.setProperty('--o', t > .5 ? (t - .5) * 2 : 0);
+        s.style.setProperty('--w', t > 0 && t < 1 ? Math.sin(Math.PI * t) : 0);
+      }
+      const d = Math.min(1, Math.max(0, (p - .74) / .2));
+      sig.forEach((path, i) => {
+        const local = Math.min(1, Math.max(0, d * sig.length - i));
+        path.style.setProperty('--draw', 1 - local);
+      });
+    };
+    addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+
+    // Dial: a fan of ticks around the left side, like a watch bezel
+    const dial = document.querySelector('[data-dial]');
+    let ticks = '';
+    for (let k = 0; k <= 26; k++) {
+      const a = (-70 + k * 7) * Math.PI / 180, len = k % 5 === 0 ? 9 : 6;
+      const cx = 40, cy = 32, r = 30;
+      const x1 = cx - Math.cos(a) * r, y1 = cy - Math.sin(a) * r;
+      const x2 = cx - Math.cos(a) * (r - len), y2 = cy - Math.sin(a) * (r - len);
+      ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#10120f" stroke-width=".8" opacity="${(.35 + k / 40).toFixed(2)}"/>`;
+    }
+    dial.innerHTML = ticks;
+    const clock = document.querySelector('[data-clock]');
+    const tick = () => {
+      const now = new Date();
+      clock.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      clock.dateTime = now.toISOString();
+    };
+    tick();
+    setInterval(tick, 30000);
+  })();
+
+  // Contact form: front-end only, confirms locally
+  document.getElementById('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.target, status = document.getElementById('status');
+    const missing = [...f.querySelectorAll('[required]')].find(i => !i.value.trim() || !i.checkValidity());
+    if (missing) {
+      status.textContent = `Add ${missing.getAttribute('aria-label').toLowerCase()} to send the form.`;
+      missing.focus();
+      return;
+    }
+    status.textContent = 'Thanks — your message is confirmed. We reply within two working days.';
+    f.reset();
+  });
+</script>
+
+<script type="importmap">
+  { "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  } }
+</script>
+<script type="module">
+  // Hero bolt, rendered in WebGL. Modelled like the real part: one turned (lathe) body,
+  // with the helical thread, hex head, cross holes and socket added on top.
+  import * as THREE from 'three';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+  const canvas = document.querySelector('[data-bolt]');
+  const hero = canvas.closest('.hero');
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  } catch (e) {
+    canvas.remove();  // no WebGL: the SVG fallback stays visible
+    throw e;
+  }
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.VSMShadowMap;
+
+  const scene = new THREE.Scene();
+
+  // Studio reflections, tinted toward the hero's sage so the steel sits in the scene
+  const room = new RoomEnvironment(renderer);
+  const tint = new THREE.Color(0xd3ddcc);
+  room.traverse(o => { if (o.material && o.material.color) o.material.color.multiply(tint); });
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(room, 0.04).texture;
+
+  const steel = new THREE.MeshPhysicalMaterial({
+    color: 0xe6e9e3, metalness: 1, roughness: 0.19, envMapIntensity: 1.3, side: THREE.DoubleSide,
+  });
+  const hole = new THREE.MeshStandardMaterial({ color: 0x0b0d0a, roughness: 0.9, metalness: 0.2 });
+
+  // ---- Turned body: profile as (radius, length) from the tip (y = 0) to the thread start ----
+  const V = (r, y) => new THREE.Vector2(r, y);
+  const profile = [
+    V(0, 0), V(1.9, 0), V(2.2, 0.12), V(3.85, 2.1),            // tip: flat face + chamfer
+    V(3.9, 2.3), V(3.9, 36),                                   // thin shaft
+    V(4.05, 36.1), V(4.2, 36.35), V(4.2, 50),                  // first step
+    V(4.35, 50.1), V(4.5, 50.35), V(4.5, 65.5),                // second step
+    V(4.75, 66.6), V(5.6, 67.9), V(7.0, 68.8), V(8.4, 69.3),   // fillet into the collar
+    V(8.85, 69.6), V(9.0, 70.1), V(9.0, 76.6), V(8.7, 77.0),   // collar with edge breaks
+    V(8.9, 77.1), V(8.9, 95.2), V(9.6, 95.3),                  // thread core
+  ];
+  const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 160), steel);
+
+  // ---- Helical V-thread swept around the core: 3 strips (flank, crest, flank) per ring ----
+  function threadGeometry({ y0, y1, pitch, rMin, rMax, seg = 72 }) {
+    const steps = Math.ceil(((y1 - y0) / pitch) * seg);
+    const flat = pitch * 0.09;
+    const prof = [
+      [rMin, -pitch / 2], [rMax, -flat],
+      [rMax, -flat], [rMax, flat],
+      [rMax, flat], [rMin, pitch / 2],
+    ];
+    const pos = [], idx = [];
+    for (let i = 0; i <= steps; i++) {
+      const th = (i / seg) * Math.PI * 2, yc = y0 + pitch * (i / seg);
+      // fade the thread in/out at each end, like a run-out
+      const ramp = Math.min(1, i / (seg * 0.35), (steps - i) / (seg * 0.35));
+      for (const [r, dy] of prof) {
+        const rr = rMin + (r - rMin) * ramp;
+        pos.push(rr * Math.sin(th), yc + dy, rr * Math.cos(th));
+      }
+    }
+    for (let i = 0; i < steps; i++) {
+      for (let s = 0; s < 3; s++) {
+        const a = i * 6 + s * 2, b = a + 1, c = a + 6, d = b + 6;
+        idx.push(a, b, c, b, d, c);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  }
+  const thread = new THREE.Mesh(threadGeometry({ y0: 78.2, y1: 94.2, pitch: 1.75, rMin: 8.9, rMax: 10.7 }), steel);
+
+  // ---- Hex head with chamfered corners (a lathe cone intersect is faked with a turned cap) ----
+  const hexR = 10.4, hexY0 = 95.3, hexY1 = 104;
+  const hex = new THREE.Mesh(new THREE.CylinderGeometry(hexR, hexR, hexY1 - hexY0, 6, 1), steel);
+  hex.position.y = (hexY0 + hexY1) / 2;
+  hex.rotation.y = Math.PI / 6;
+  const capProfile = [V(9.0, hexY1 - 0.9), V(9.4, hexY1 - 0.35), V(8.6, hexY1), V(0, hexY1)];
+  const cap = new THREE.Mesh(new THREE.LatheGeometry(capProfile, 96), steel);
+
+  const part = new THREE.Group();
+  part.add(body, thread, hex, cap);
+
+  // Cross-drilled holes on each flat, and the hex socket in the end face
+  const flatDist = hexR * Math.cos(Math.PI / 6);
+  for (let k = 0; k < 6; k++) {
+    const a = k * Math.PI / 3 + Math.PI / 6 + Math.PI / 6;
+    const n = new THREE.Vector3(Math.sin(a), 0, Math.cos(a));
+    const d = new THREE.Mesh(new THREE.CircleGeometry(1.45, 32), hole);
+    d.position.copy(n.clone().multiplyScalar(flatDist + 0.03)).setY((hexY0 + hexY1) / 2 + 0.3);
+    d.lookAt(d.position.clone().add(n));
+    part.add(d);
+  }
+  const socket = new THREE.Mesh(new THREE.CircleGeometry(4.1, 6), hole);
+  socket.rotation.x = -Math.PI / 2;
+  socket.position.y = hexY1 + 0.02;
+  const socketFloor = new THREE.Mesh(new THREE.CircleGeometry(2.2, 6), new THREE.MeshStandardMaterial({ color: 0x2a2f27, roughness: 0.6, metalness: 0.8 }));
+  socketFloor.rotation.x = -Math.PI / 2;
+  socketFloor.position.y = hexY1 + 0.03;
+  part.add(socket, socketFloor);
+
+  part.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+
+  // Lay the part along X, centred, tip slightly down so it rests on thread and tip
+  part.rotation.z = -Math.PI / 2;     // lathe Y axis -> world X
+  part.position.x = -52;
+  const tilt = new THREE.Group();
+  tilt.add(part);
+  tilt.rotation.z = 0.07;
+  const bolt = new THREE.Group();
+  bolt.add(tilt);
+  bolt.rotation.y = -0.46;            // tip back-left, socket end toward the viewer
+  scene.add(bolt);
+
+  // Floor that only receives the shadow; the wall/floor colours come from the CSS backdrop
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.ShadowMaterial({ opacity: 0.3 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -8.3;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Key light from the right, like the backdrop's glow; soft sage fill
+  const key = new THREE.DirectionalLight(0xf2f7ee, 2.4);
+  key.position.set(140, 150, 30);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.radius = 14;
+  key.shadow.blurSamples = 24;
+  key.shadow.bias = -0.0006;
+  Object.assign(key.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 500 });
+  scene.add(key);
+  // Cool rim from back-left to pick out the silhouette against the darker wall
+  const rim = new THREE.DirectionalLight(0xdfe9ff, 0.9);
+  rim.position.set(-160, 80, -120);
+  scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xd9e5d2, 0x3a4436, 0.5));
+
+  const camera = new THREE.PerspectiveCamera(26, 1, 1, 5000);
+  const target = new THREE.Vector3();
+  const viewDir = new THREE.Vector3(0, 118, 158).normalize();
+  function frame() {
+    const w = hero.clientWidth, h = hero.clientHeight, aspect = w / h;
+    renderer.setSize(w, h, false);
+    camera.aspect = aspect;
+    if (aspect >= 1) {
+      camera.position.set(0, 118, 158);
+      target.set(-4, -8, 0);
+    } else {
+      // Tall screens: back off until the part fits the width, then lift it above the tagline
+      const half = THREE.MathUtils.degToRad(camera.fov / 2);
+      const dist = 66 / Math.tan(Math.atan(Math.tan(half) * aspect));
+      camera.position.copy(viewDir).multiplyScalar(dist);
+      target.set(0, -dist * Math.tan(half) * 0.56, 0);
+    }
+    camera.lookAt(target);
+    camera.updateProjectionMatrix();
+  }
+
+  // Small, pointer-driven turn so the reflections move; nothing animates on its own
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const base = bolt.rotation.y;
+  let aimY = base, aimX = 0, visible = true;
+  hero.addEventListener('pointermove', e => {
+    if (reduce) return;
+    const r = hero.getBoundingClientRect();
+    aimY = base + ((e.clientX - r.left) / r.width - 0.5) * 0.25;
+    aimX = ((e.clientY - r.top) / r.height - 0.5) * 0.08;
+  });
+  hero.addEventListener('pointerleave', () => { aimY = base; aimX = 0; });
+  new IntersectionObserver(([en]) => { visible = en.isIntersecting; }).observe(hero);
+
+  function loop() {
+    requestAnimationFrame(loop);
+    if (!visible) return;
+    bolt.rotation.y += (aimY - bolt.rotation.y) * 0.06;
+    bolt.rotation.x += (aimX - bolt.rotation.x) * 0.06;
+    renderer.render(scene, camera);
+  }
+  new ResizeObserver(frame).observe(hero);
+  frame();
+  renderer.render(scene, camera);
+  hero.classList.add('has-3d');
+  loop();
+</script>
+</body>
+</html>
